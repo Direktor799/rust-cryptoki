@@ -91,6 +91,7 @@ pub const CKK_GOSTR3410: CK_KEY_TYPE = 48;
 pub const CKK_GOSTR3411: CK_KEY_TYPE = 49;
 pub const CKK_GOST28147: CK_KEY_TYPE = 50;
 pub const CKK_EC_EDWARDS: CK_KEY_TYPE = 64;
+pub const CKK_HKDF: CK_KEY_TYPE = 66;
 pub const CKC_X_509: CK_CERTIFICATE_TYPE = 0;
 pub const CKC_X_509_ATTR_CERT: CK_CERTIFICATE_TYPE = 1;
 pub const CKC_WTLS: CK_CERTIFICATE_TYPE = 2;
@@ -530,6 +531,9 @@ pub const CKM_RSA_PKCS_OAEP_TPM_1_1: CK_MECHANISM_TYPE = 16386;
 pub const CKM_EC_EDWARDS_KEY_PAIR_GEN: CK_MECHANISM_TYPE = 4181;
 pub const CKM_EC_MONTGOMERY_KEY_PAIR_GEN: CK_MECHANISM_TYPE = 4182;
 pub const CKM_EDDSA: CK_MECHANISM_TYPE = 4183;
+pub const CKM_HKDF_DERIVE: CK_MECHANISM_TYPE = 16426;
+pub const CKM_HKDF_DATA: CK_MECHANISM_TYPE = 16427;
+pub const CKM_HKDF_KEY_GEN: CK_MECHANISM_TYPE = 16428;
 pub const CK_OTP_FORMAT_DECIMAL: CK_ULONG = 0;
 pub const CK_OTP_FORMAT_HEXADECIMAL: CK_ULONG = 1;
 pub const CK_OTP_FORMAT_ALPHANUMERIC: CK_ULONG = 2;
@@ -566,6 +570,9 @@ pub const CKD_SHA256_KDF: CK_EC_KDF_TYPE = 6;
 pub const CKD_SHA384_KDF: CK_EC_KDF_TYPE = 7;
 pub const CKD_SHA512_KDF: CK_EC_KDF_TYPE = 8;
 pub const CKD_CPDIVERSIFY_KDF: CK_EC_KDF_TYPE = 9;
+pub const CKF_HKDF_SALT_NULL: CK_FLAGS = 1;
+pub const CKF_HKDF_SALT_DATA: CK_FLAGS = 2;
+pub const CKF_HKDF_SALT_KEY: CK_FLAGS = 4;
 pub const CKF_HW: CK_FLAGS = 1;
 pub const CKF_ENCRYPT: CK_FLAGS = 256;
 pub const CKF_DECRYPT: CK_FLAGS = 512;
@@ -988,6 +995,29 @@ pub struct ck_aes_cbc_encrypt_data_params {
     pub length: ::std::os::raw::c_ulong,
 }
 impl Default for ck_aes_cbc_encrypt_data_params {
+    fn default() -> Self {
+        let mut s = ::std::mem::MaybeUninit::<Self>::uninit();
+        unsafe {
+            ::std::ptr::write_bytes(s.as_mut_ptr(), 0, 1);
+            s.assume_init()
+        }
+    }
+}
+#[repr(C)]
+#[cfg_attr(windows, repr(packed))]
+#[derive(Debug, Copy, Clone)]
+pub struct ck_hkdf_params {
+    pub bExtract: ::std::os::raw::c_uchar,
+    pub bExpand: ::std::os::raw::c_uchar,
+    pub prfHashMechanism: CK_MECHANISM_TYPE,
+    pub ulSaltType: ::std::os::raw::c_ulong,
+    pub pSalt: *mut ::std::os::raw::c_uchar,
+    pub ulSaltLen: ::std::os::raw::c_ulong,
+    pub hSaltKey: CK_OBJECT_HANDLE,
+    pub pInfo: *mut ::std::os::raw::c_uchar,
+    pub ulInfoLen: ::std::os::raw::c_ulong,
+}
+impl Default for ck_hkdf_params {
     fn default() -> Self {
         let mut s = ::std::mem::MaybeUninit::<Self>::uninit();
         unsafe {
@@ -1629,6 +1659,8 @@ pub type CK_DES_CBC_ENCRYPT_DATA_PARAMS = ck_des_cbc_encrypt_data_params;
 pub type CK_DES_CBC_ENCRYPT_DATA_PARAMS_PTR = *mut ck_des_cbc_encrypt_data_params;
 pub type CK_AES_CBC_ENCRYPT_DATA_PARAMS = ck_aes_cbc_encrypt_data_params;
 pub type CK_AES_CBC_ENCRYPT_DATA_PARAMS_PTR = *mut ck_aes_cbc_encrypt_data_params;
+pub type CK_HKDF_PARAMS = ck_hkdf_params;
+pub type CK_HKDF_PARAMS_PTR = *mut ck_hkdf_params;
 extern crate libloading;
 pub struct Pkcs11 {
     __library: ::libloading::Library,

@@ -207,6 +207,15 @@ extern "C" {
 #define string_data pData
 #define string_data_len ulLen
 #define data_params pData
+#define extract bExtract
+#define expand bExpand
+#define prf_hash_mechanism prfHashMechanism
+#define salt_type ulSaltType
+#define salt_ptr pSalt
+#define salt_len ulSaltLen
+#define salt_key hSaltKey
+#define info_ptr pInfo
+#define info_len ulInfoLen
 #endif	/* CRYPTOKI_COMPAT */
 
 
@@ -402,6 +411,10 @@ typedef unsigned long ck_key_type_t;
 #define CKK_GOSTR3411		(0x31UL)
 #define CKK_GOST28147		(0x32UL)
 #define CKK_EC_EDWARDS		(0x40UL)
+
+/* From version 3.0 */
+#define CKK_HKDF    (0x42UL)
+
 #define CKK_VENDOR_DEFINED	((unsigned long) (1UL << 31))
 
 
@@ -888,6 +901,10 @@ typedef unsigned long ck_mechanism_type_t;
 #define CKM_EC_MONTGOMERY_KEY_PAIR_GEN  (0x1056UL)
 #define CKM_EDDSA			(0x1057UL)
 
+#define CKM_HKDF_DERIVE (0x402aUL)
+#define CKM_HKDF_DATA (0x402bUL)
+#define CKM_HKDF_KEY_GEN  (0x402cUL)
+
 /* Attribute and other constants related to OTP */
 #define CK_OTP_FORMAT_DECIMAL		(0UL)
 #define CK_OTP_FORMAT_HEXADECIMAL	(1UL)
@@ -1027,6 +1044,22 @@ struct ck_aes_cbc_encrypt_data_params {
   unsigned char iv[16];
   unsigned char *data_params;
   unsigned long length;
+};
+
+#define CKF_HKDF_SALT_NULL  (0x01UL)
+#define CKF_HKDF_SALT_DATA  (0x02UL)
+#define CKF_HKDF_SALT_KEY   (0x04UL)
+
+struct ck_hkdf_params {
+  unsigned char extract;
+  unsigned char expand;
+  ck_mechanism_type_t prf_hash_mechanism;
+  unsigned long salt_type;
+  unsigned char *salt_ptr;
+  unsigned long salt_len;
+  ck_object_handle_t salt_key;
+  unsigned char *info_ptr;
+  unsigned long info_len;
 };
 
 #define CKF_HW			(1UL << 0)
@@ -1643,6 +1676,9 @@ typedef struct ck_des_cbc_encrypt_data_params *CK_DES_CBC_ENCRYPT_DATA_PARAMS_PT
 
 typedef struct ck_aes_cbc_encrypt_data_params CK_AES_CBC_ENCRYPT_DATA_PARAMS;
 typedef struct ck_aes_cbc_encrypt_data_params *CK_AES_CBC_ENCRYPT_DATA_PARAMS_PTR;
+
+typedef struct ck_hkdf_params CK_HKDF_PARAMS;
+typedef struct ck_hkdf_params *CK_HKDF_PARAMS_PTR;
 
 #ifndef NULL_PTR
 #define NULL_PTR NULL

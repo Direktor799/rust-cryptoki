@@ -5,6 +5,7 @@
 pub mod aead;
 pub mod ekdf;
 pub mod elliptic_curve;
+pub mod hkdf;
 mod mechanism_info;
 pub mod rsa;
 
@@ -280,6 +281,18 @@ impl MechanismType {
     pub const GENERIC_SECRET_KEY_GEN: MechanismType = MechanismType {
         val: CKM_GENERIC_SECRET_KEY_GEN,
     };
+
+    // HKDF
+    /// HKDF key generation mechanism
+    pub const HKDF_KEY_GEN: MechanismType = MechanismType {
+        val: CKM_HKDF_KEY_GEN,
+    };
+    /// HKDF-DERIVE mechanism
+    pub const HKDF_DERIVE: MechanismType = MechanismType {
+        val: CKM_HKDF_DERIVE,
+    };
+    /// HKDF-DATA mechanism
+    pub const HKDF_DATA: MechanismType = MechanismType { val: CKM_HKDF_DATA };
 
     pub(crate) fn stringify(mech: CK_MECHANISM_TYPE) -> String {
         match mech {
@@ -637,6 +650,9 @@ impl MechanismType {
                 String::from(stringify!(CKM_EC_MONTGOMERY_KEY_PAIR_GEN))
             }
             CKM_EDDSA => String::from(stringify!(CKM_EDDSA)),
+            CKM_HKDF_KEY_GEN => String::from(stringify!(CKM_HKDF_KEY_GEN)),
+            CKM_HKDF_DERIVE => String::from(stringify!(CKM_HKDF_DERIVE)),
+            CKM_HKDF_DATA => String::from(stringify!(CKM_HKDF_DATA)),
             _ => format!("unknown {mech:08x}"),
         }
     }
@@ -712,6 +728,9 @@ impl TryFrom<CK_MECHANISM_TYPE> for MechanismType {
             CKM_SHA384_HMAC => Ok(MechanismType::SHA384_HMAC),
             CKM_SHA512_HMAC => Ok(MechanismType::SHA512_HMAC),
             CKM_GENERIC_SECRET_KEY_GEN => Ok(MechanismType::GENERIC_SECRET_KEY_GEN),
+            CKM_HKDF_KEY_GEN => Ok(MechanismType::HKDF_KEY_GEN),
+            CKM_HKDF_DERIVE => Ok(MechanismType::HKDF_DERIVE),
+            CKM_HKDF_DATA => Ok(MechanismType::HKDF_DATA),
             other => {
                 error!("Mechanism type {} is not supported.", other);
                 Err(Error::NotSupported)
@@ -894,6 +913,14 @@ pub enum Mechanism<'a> {
     Sha256Hmac,
     /// GENERIC-SECRET-KEY-GEN mechanism
     GenericSecretKeyGen,
+
+    // HKDF
+    /// HKDF key gen mechanism
+    HkdfKeyGen,
+    /// HKDF-DERIVE mechanism
+    HkdfDerive(hkdf::HkdfParams<'a>),
+    /// HKDF-DATA mechanism
+    HkdfData(hkdf::HkdfParams<'a>),
 }
 
 impl Mechanism<'_> {
@@ -957,6 +984,10 @@ impl Mechanism<'_> {
             Mechanism::Sha256Hmac => MechanismType::SHA256_HMAC,
 
             Mechanism::GenericSecretKeyGen => MechanismType::GENERIC_SECRET_KEY_GEN,
+
+            Mechanism::HkdfKeyGen => MechanismType::HKDF_KEY_GEN,
+            Mechanism::HkdfDerive(_) => MechanismType::HKDF_DERIVE,
+            Mechanism::HkdfData(_) => MechanismType::HKDF_DATA,
         }
     }
 }
@@ -988,6 +1019,9 @@ impl From<&Mechanism<'_>> for CK_MECHANISM {
             | Mechanism::Sha512RsaPkcsPss(params) => make_mechanism(mechanism, params),
             Mechanism::RsaPkcsOaep(params) => make_mechanism(mechanism, params),
             Mechanism::Ecdh1Derive(params) => make_mechanism(mechanism, params),
+            Mechanism::HkdfDerive(params) | Mechanism::HkdfData(params) => {
+                make_mechanism(mechanism, params)
+            }
             // Mechanisms without parameters
             Mechanism::AesKeyGen
             | Mechanism::AesEcb
@@ -1023,7 +1057,8 @@ impl From<&Mechanism<'_>> for CK_MECHANISM {
             | Mechanism::Sha384RsaPkcs
             | Mechanism::Sha512RsaPkcs
             | Mechanism::Sha256Hmac
-            | Mechanism::GenericSecretKeyGen => CK_MECHANISM {
+            | Mechanism::GenericSecretKeyGen
+            | Mechanism::HkdfKeyGen => CK_MECHANISM {
                 mechanism,
                 pParameter: null_mut(),
                 ulParameterLen: 0,
